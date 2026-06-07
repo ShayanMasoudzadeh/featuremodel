@@ -1,0 +1,1194 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.editorconfig
+.gitattributes
+.gitignore
+constraint.gd
+constraint.gd.uid
+feature_model_exporter.gd
+feature_model_exporter.gd.uid
+icon.svg
+icon.svg.import
+project.godot
+scenes/graph_edit.gd
+scenes/graph_edit.gd.uid
+scenes/graph_edit.tscn
+scenes/Nodes/feature_node.gd
+scenes/Nodes/feature_node.gd.uid
+scenes/Nodes/feature_node.tscn
+scenes/Nodes/root_node.gd
+scenes/Nodes/root_node.gd.uid
+scenes/Nodes/root_node.tscn
+scenes/UI/constraint_node.gd
+scenes/UI/constraint_node.gd.uid
+scenes/UI/constraint_node.tscn
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".editorconfig">
+root = true
+
+[*]
+charset = utf-8
+</file>
+
+<file path=".gitattributes">
+# Normalize EOL for all files that Git considers text files.
+* text=auto eol=lf
+</file>
+
+<file path=".gitignore">
+# Godot 4+ specific ignores
+.godot/
+/android/
+</file>
+
+<file path="constraint.gd">
+extends Resource
+class_name Constraint
+
+var type : String
+var from_node : GraphNode
+var to_node : GraphNode
+</file>
+
+<file path="constraint.gd.uid">
+uid://bgj0vgpytfypk
+</file>
+
+<file path="feature_model_exporter.gd">
+extends Node
+class_name FeatureModelExporter
+
+# ── public API ────────────────────────────────────────────────────────────────
+
+static func save(root: FeatureNode, constraints: Array[Constraint], path: String) -> void:
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		push_error("FeatureModelExporter: cannot open '%s'" % path)
+		return
+	file.store_string(_build_xml(root, constraints))
+
+# ── XML builder ───────────────────────────────────────────────────────────────
+
+static func _build_xml(root: FeatureNode, constraints: Array[Constraint]) -> String:
+	return "\n".join([
+		'<?xml version="1.0" encoding="UTF-8"?>',
+		"<featureModel>",
+		"  <struct>",
+		_serialize_node(root, 2),
+		"  </struct>",
+		_serialize_constraints(constraints),
+		"</featureModel>",
+	])
+
+# ── struct serializer ─────────────────────────────────────────────────────────
+
+static func _serialize_node(node: FeatureNode, depth: int) -> String:
+	var pad  := "  ".repeat(depth)
+	var name := ' name="%s"'       % _escape(node.featureName)
+	var mand := ' mandatory="true"' if node.isMandatory else ""
+
+	if node.children.is_empty():
+		return pad + "<feature%s%s/>" % [name, mand]
+
+	var tag: String
+	if   node.isChildrenXor: tag = "alt"
+	elif node.isChildrenOr:  tag = "or"
+	else:                    tag = "and"
+
+	var lines: PackedStringArray = []
+	lines.append(pad + "<%s%s%s>" % [tag, name, mand])
+	for child in node.children:
+		lines.append(_serialize_node(child, depth + 1))
+	lines.append(pad + "</%s>" % tag)
+	return "\n".join(lines)
+
+# ── constraints serializer ────────────────────────────────────────────────────
+
+static func _serialize_constraints(constraints: Array[Constraint]) -> String:
+	if constraints.is_empty():
+		return "  <constraints/>"
+
+	var lines: PackedStringArray = []
+	lines.append("  <constraints>")
+	for c in constraints:
+		var rule := _serialize_rule(c)
+		if rule != "":
+			lines.append(rule)
+	lines.append("  </constraints>")
+	return "\n".join(lines)
+
+static func _serialize_rule(c: Constraint) -> String:
+	var from := (c.from_node as FeatureNode)
+	var to   := (c.to_node   as FeatureNode)
+
+	if from == null or to == null:
+		push_warning("FeatureModelExporter: constraint has a non-FeatureNode endpoint, skipping.")
+		return ""
+
+	var a := _escape(from.featureName)
+	var b := _escape(to.featureName)
+
+	# FeatureIDE propositional logic:
+	#   requires → A ⇒  B        <imp><var>A</var><var>B</var></imp>
+	#   excludes → A ⇒ ¬B        <imp><var>A</var><not><var>B</var></not></imp>
+	match c.type:
+		"requires":
+			return "\n".join([
+				"    <rule>",
+				"      <imp>",
+				"        <var>%s</var>" % a,
+				"        <var>%s</var>" % b,
+				"      </imp>",
+				"    </rule>",
+			])
+		"excludes":
+			return "\n".join([
+				"    <rule>",
+				"      <imp>",
+				"        <var>%s</var>" % a,
+				"        <not><var>%s</var></not>" % b,
+				"      </imp>",
+				"    </rule>",
+			])
+		_:
+			push_warning("FeatureModelExporter: unknown constraint type '%s', skipping." % c.type)
+			return ""
+
+# ── helpers ───────────────────────────────────────────────────────────────────
+
+static func _escape(s: String) -> String:
+	return s \
+		.replace("&",  "&amp;")  \
+		.replace("<",  "&lt;")   \
+		.replace(">",  "&gt;")   \
+		.replace('"',  "&quot;") \
+		.replace("'",  "&apos;")
+</file>
+
+<file path="feature_model_exporter.gd.uid">
+uid://vhprea13tde6
+</file>
+
+<file path="icon.svg">
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect width="124" height="124" x="2" y="2" fill="#363d52" stroke="#212532" stroke-width="4" rx="14"/><g fill="#fff" transform="translate(12.322 12.322)scale(.101)"><path d="M105 673v33q407 354 814 0v-33z"/><path fill="#478cbf" d="m105 673 152 14q12 1 15 14l4 67 132 10 8-61q2-11 15-15h162q13 4 15 15l8 61 132-10 4-67q3-13 15-14l152-14V427q30-39 56-81-35-59-83-108-43 20-82 47-40-37-88-64 7-51 8-102-59-28-123-42-26 43-46 89-49-7-98 0-20-46-46-89-64 14-123 42 1 51 8 102-48 27-88 64-39-27-82-47-48 49-83 108 26 42 56 81zm0 33v39c0 276 813 276 814 0v-39l-134 12-5 69q-2 10-14 13l-162 11q-12 0-16-11l-10-65H446l-10 65q-4 11-16 11l-162-11q-12-3-14-13l-5-69z"/><path d="M483 600c0 34 58 34 58 0v-86c0-34-58-34-58 0z"/><circle cx="725" cy="526" r="90"/><circle cx="299" cy="526" r="90"/></g><g fill="#414042" transform="translate(12.322 12.322)scale(.101)"><circle cx="307" cy="532" r="60"/><circle cx="717" cy="532" r="60"/></g></svg>
+</file>
+
+<file path="icon.svg.import">
+[remap]
+
+importer="texture"
+type="CompressedTexture2D"
+uid="uid://p1ewk7gs2ect"
+path="res://.godot/imported/icon.svg-218a8f2b3041327d8a5756f3a245f83b.ctex"
+metadata={
+"vram_texture": false
+}
+
+[deps]
+
+source_file="res://icon.svg"
+dest_files=["res://.godot/imported/icon.svg-218a8f2b3041327d8a5756f3a245f83b.ctex"]
+
+[params]
+
+compress/mode=0
+compress/high_quality=false
+compress/lossy_quality=0.7
+compress/uastc_level=0
+compress/rdo_quality_loss=0.0
+compress/hdr_compression=1
+compress/normal_map=0
+compress/channel_pack=0
+mipmaps/generate=false
+mipmaps/limit=-1
+roughness/mode=0
+roughness/src_normal=""
+process/channel_remap/red=0
+process/channel_remap/green=1
+process/channel_remap/blue=2
+process/channel_remap/alpha=3
+process/fix_alpha_border=true
+process/premult_alpha=false
+process/normal_map_invert_y=false
+process/hdr_as_srgb=false
+process/hdr_clamp_exposure=false
+process/size_limit=0
+detect_3d/compress_to=1
+svg/scale=1.0
+editor/scale_with_editor_scale=false
+editor/convert_colors_with_editor_theme=false
+</file>
+
+<file path="project.godot">
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="FeatureModel Environment"
+run/main_scene="uid://dpedhqcy23qj3"
+config/features=PackedStringArray("4.6", "Mobile")
+config/icon="res://icon.svg"
+
+[display]
+
+window/stretch/mode="canvas_items"
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+
+[rendering]
+
+rendering_device/driver.windows="d3d12"
+renderer/rendering_method="mobile"
+</file>
+
+<file path="scenes/graph_edit.gd">
+extends GraphEdit
+
+signal update_nodes()
+
+#Add Constraint Window nodes
+@onready var add_const_window: PanelContainer = $AddConstWindow
+@onready var from_option_btn: OptionButton = $AddConstWindow/VBoxContainer/HBoxContainer/FromOptionBtn
+@onready var type_option_btn: OptionButton = $AddConstWindow/VBoxContainer/HBoxContainer/TypeOptionBtn
+@onready var to_option_btn: OptionButton = $AddConstWindow/VBoxContainer/HBoxContainer/ToOptionBtn
+
+
+@onready var constraints_cont: VBoxContainer = $FoldableContainer/ScrollContainer/ConstraintsCont
+const CONSTRAINT_NODE = preload("uid://c1fw68hmhp7ts")
+
+var nodes : Array[GraphNode] = []
+var constraints : Array[Constraint] = []
+
+const FEATURE_NODE = preload("uid://bqc4u7xobsat")
+
+func _ready() -> void:
+	add_to_nodes($RootNode)
+
+func add_to_nodes(node: GraphNode) -> void:
+	nodes.append(node)
+	if node is FeatureNode:
+		var fnode = node as FeatureNode
+		update_nodes.connect(fnode.update)
+
+func _on_add_node_button_pressed() -> void:
+	var new_node = FEATURE_NODE.instantiate()
+	add_child(new_node)
+	add_to_nodes(new_node)
+
+func _on_connection_request(from_node: StringName, from_port: int, to_node: StringName, to_port: int) -> void:
+	var from = get_node(String(from_node))
+	if from is FeatureNode: from = (from as FeatureNode)
+	elif from is RootNode: from = from as RootNode
+	var to = (get_node(String(to_node)) as FeatureNode)
+	
+	for connection in connections:
+		if connection["to_node"] == to_node:
+			_on_disconnection_request(connection["from_node"], connection["from_port"], to_node, to_port)
+			break
+	
+	from.add_child_node(to)
+	to.set_parent(from)
+	print("%s to %s" % [from_port, to_port])
+	connect_node(from_node, from_port, to_node, to_port)
+	update_nodes.emit()
+
+
+func _on_disconnection_request(from_node: StringName, from_port: int, to_node: StringName, to_port: int) -> void:
+	var from = get_node(String(from_node))
+	if from is FeatureNode: from = (from as FeatureNode)
+	elif from is RootNode: from = from as RootNode
+	var to = (get_node(String(to_node)) as FeatureNode)
+	
+	from.remove_child_node(to)
+	to.clear_parent()
+	disconnect_node(from_node, from_port, to_node, to_port)
+	update_nodes.emit()
+	
+
+func _on_save_xml_button_pressed() -> void:
+	var temp_root = FeatureNode.new()
+	temp_root.featureName = $RootNode.featureName
+	temp_root.isMandatory = true
+	temp_root.isChildrenXor = $RootNode.isChildrenXor
+	temp_root.isChildrenOr = $RootNode.isChildrenOr
+	temp_root.children = $RootNode.children
+	
+	$FeatureModelExporter.save(temp_root, constraints, "user://feature_model.xml")
+
+func add_constraint(from_feature: GraphNode, to_feature: GraphNode, type: String) -> void:
+	var constraint : Constraint = Constraint.new()
+	constraint.from_node = from_feature
+	constraint.type = type
+	constraint.to_node = to_feature
+	constraints.append(constraint)
+	
+	var const_node : ConstNode = CONSTRAINT_NODE.instantiate()
+	const_node.constraint = constraint
+	const_node.delete_request.connect(on_remove_constraint)
+	constraints_cont.add_child(const_node)
+	const_node.update_text()
+
+func on_remove_constraint(const_node: ConstNode, constraint: Constraint) -> void:
+	constraints.erase(constraint)
+	const_node.queue_free()
+
+func _on_add_constraint_button_pressed() -> void:
+	add_const_window.visible = true
+	update_const_option_btns()
+
+func _on_add_const_cancel_button_pressed() -> void:
+	from_option_btn.selected = -1
+	type_option_btn.selected = -1
+	to_option_btn.selected = -1
+	add_const_window.visible = false
+
+func _on_add_const_add_button_pressed() -> void:
+	if (from_option_btn.selected == -1 or
+		type_option_btn.selected == -1 or
+		to_option_btn.selected == -1):
+			return
+	if from_option_btn.selected == to_option_btn.selected:
+		return
+	
+	add_constraint(nodes[from_option_btn.selected], 
+		nodes[to_option_btn.selected], 
+		type_option_btn.get_item_text(type_option_btn.selected))
+	
+	$FoldableContainer.folded = false
+	add_const_window.visible = false
+
+func update_const_option_btns() -> void:
+	from_option_btn.clear()
+	to_option_btn.clear()
+	
+	for node in nodes:
+		from_option_btn.add_item(node.featureName)
+		to_option_btn.add_item(node.featureName)
+	
+	from_option_btn.selected = -1
+	to_option_btn.selected = -1
+</file>
+
+<file path="scenes/graph_edit.gd.uid">
+uid://c8fljvv0x6iyl
+</file>
+
+<file path="scenes/graph_edit.tscn">
+[gd_scene format=3 uid="uid://dpedhqcy23qj3"]
+
+[ext_resource type="Script" uid="uid://c8fljvv0x6iyl" path="res://scenes/graph_edit.gd" id="1_snvmi"]
+[ext_resource type="PackedScene" uid="uid://3tqrn06x3y11" path="res://scenes/Nodes/root_node.tscn" id="2_pqprv"]
+[ext_resource type="Script" uid="uid://vhprea13tde6" path="res://feature_model_exporter.gd" id="3_0pfwd"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0pfwd"]
+bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qdvp5"]
+bg_color = Color(0.22382358, 0.22382358, 0.22382352, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_w1f5q"]
+content_margin_bottom = 10.0
+bg_color = Color(0.17211545, 0.1721153, 0.1721153, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+shadow_color = Color(0, 0, 0, 0.39215687)
+shadow_size = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bkvrj"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_detail = 5
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0pfwd"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_psqnr"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_psqnr"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7w68q"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.14622876, 0.14622876, 0.14622873, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ra2e7"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sabns"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.14622876, 0.14622876, 0.14622873, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q8srt"]
+content_margin_left = 3.0
+content_margin_top = 3.0
+content_margin_right = 3.0
+content_margin_bottom = 3.0
+bg_color = Color(0.17211545, 0.1721153, 0.1721153, 1)
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+
+[node name="UI" type="Panel" unique_id=1345218056]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_0pfwd")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=1320361278]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 10.0
+offset_top = 9.0
+offset_right = -10.0
+offset_bottom = 45.0
+grow_horizontal = 2
+theme_override_constants/separation = 10
+
+[node name="AddNodeButton" type="Button" parent="HBoxContainer" unique_id=840578435]
+layout_mode = 2
+text = "Add Node +"
+
+[node name="AddConstraintButton" type="Button" parent="HBoxContainer" unique_id=1527485216]
+layout_mode = 2
+text = "Add Constraint +"
+
+[node name="SaveXmlButton" type="Button" parent="HBoxContainer" unique_id=80336211]
+layout_mode = 2
+text = "Save to .xml"
+
+[node name="GraphEdit" type="GraphEdit" parent="." unique_id=532163189]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -594.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_qdvp5")
+snapping_enabled = false
+right_disconnects = true
+minimap_enabled = false
+show_grid_buttons = false
+show_minimap_button = false
+show_arrange_button = false
+script = ExtResource("1_snvmi")
+
+[node name="RootNode" parent="GraphEdit" unique_id=304707198 instance=ExtResource("2_pqprv")]
+layout_mode = 0
+offset_left = 108.0
+offset_top = 177.0
+offset_right = 312.0
+offset_bottom = 327.0
+mouse_filter = 1
+position_offset = Vector2(108, 177)
+
+[node name="FeatureModelExporter" type="Node" parent="GraphEdit" unique_id=187033098]
+script = ExtResource("3_0pfwd")
+
+[node name="AddConstWindow" type="PanelContainer" parent="GraphEdit" unique_id=1612486392]
+visible = false
+z_index = 2
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_w1f5q")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="GraphEdit/AddConstWindow" unique_id=1598292540]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="PanelContainer" type="PanelContainer" parent="GraphEdit/AddConstWindow/VBoxContainer" unique_id=501336607]
+custom_minimum_size = Vector2(300, 30)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bkvrj")
+
+[node name="Label" type="Label" parent="GraphEdit/AddConstWindow/VBoxContainer/PanelContainer" unique_id=1397528411]
+layout_mode = 2
+text = " Add a constraint"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="GraphEdit/AddConstWindow/VBoxContainer" unique_id=613090438]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1386820517]
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxEmpty_0pfwd")
+
+[node name="Label" type="Label" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1322942761]
+layout_mode = 2
+text = "From:"
+
+[node name="FromOptionBtn" type="OptionButton" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1437919050]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+item_count = 1
+popup/item_0/text = "null"
+popup/item_0/id = 0
+
+[node name="VSeparator" type="VSeparator" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=354575897]
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxEmpty_0pfwd")
+
+[node name="Label2" type="Label" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=566240413]
+layout_mode = 2
+text = "Type:"
+
+[node name="TypeOptionBtn" type="OptionButton" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=2000284071]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+item_count = 2
+popup/item_0/text = "requires"
+popup/item_0/id = 0
+popup/item_1/text = "excludes"
+popup/item_1/id = 1
+
+[node name="VSeparator3" type="VSeparator" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=2079250014]
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxEmpty_psqnr")
+
+[node name="Label3" type="Label" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1922971421]
+layout_mode = 2
+text = "To:"
+
+[node name="ToOptionBtn" type="OptionButton" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1718305016]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+item_count = 1
+popup/item_0/text = "null"
+popup/item_0/id = 0
+
+[node name="VSeparator4" type="VSeparator" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1767443326]
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxEmpty_0pfwd")
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="GraphEdit/AddConstWindow/VBoxContainer" unique_id=1320032081]
+layout_mode = 2
+theme_override_constants/separation = 25
+alignment = 1
+
+[node name="CancelButton" type="Button" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2" unique_id=1118422553]
+custom_minimum_size = Vector2(100, 30)
+layout_mode = 2
+text = "Cancel"
+
+[node name="AddButton" type="Button" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2" unique_id=1401744430]
+custom_minimum_size = Vector2(100, 30)
+layout_mode = 2
+text = "Add"
+
+[node name="FoldableContainer" type="FoldableContainer" parent="GraphEdit" unique_id=735768490]
+z_index = 1
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -319.0
+offset_top = 10.0
+offset_right = -17.0
+offset_bottom = 414.0
+grow_horizontal = 0
+theme_override_styles/title_panel = SubResource("StyleBoxFlat_psqnr")
+theme_override_styles/title_hover_panel = SubResource("StyleBoxFlat_7w68q")
+theme_override_styles/title_collapsed_panel = SubResource("StyleBoxFlat_ra2e7")
+theme_override_styles/title_collapsed_hover_panel = SubResource("StyleBoxFlat_sabns")
+theme_override_styles/panel = SubResource("StyleBoxFlat_q8srt")
+folded = true
+title = "Constraints"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="GraphEdit/FoldableContainer" unique_id=1643975150]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ConstraintsCont" type="VBoxContainer" parent="GraphEdit/FoldableContainer/ScrollContainer" unique_id=1569093485]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[connection signal="pressed" from="HBoxContainer/AddNodeButton" to="GraphEdit" method="_on_add_node_button_pressed"]
+[connection signal="pressed" from="HBoxContainer/AddConstraintButton" to="GraphEdit" method="_on_add_constraint_button_pressed"]
+[connection signal="pressed" from="HBoxContainer/SaveXmlButton" to="GraphEdit" method="_on_save_xml_button_pressed"]
+[connection signal="connection_request" from="GraphEdit" to="GraphEdit" method="_on_connection_request"]
+[connection signal="disconnection_request" from="GraphEdit" to="GraphEdit" method="_on_disconnection_request"]
+[connection signal="pressed" from="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2/CancelButton" to="GraphEdit" method="_on_add_const_cancel_button_pressed"]
+[connection signal="pressed" from="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2/AddButton" to="GraphEdit" method="_on_add_const_add_button_pressed"]
+</file>
+
+<file path="scenes/Nodes/feature_node.gd">
+extends GraphNode
+class_name FeatureNode
+
+signal name_changed()
+
+@onready var name_edit: TextEdit = $NameCont/TextEdit
+@onready var optional_check: CheckBox = $OptionalCont/CheckBox
+@onready var xor_check: CheckBox = $XorCont/CheckBox
+@onready var or_check: CheckBox = $OrCont/CheckBox
+
+@export var featureName : String = ""
+@export var isMandatory : bool = false
+@export var isChildrenXor : bool = false
+@export var isChildrenOr : bool = false
+
+@export var parent : GraphNode
+@export var children : Array[FeatureNode]
+
+
+func update() -> void:
+	if parent:
+		if parent.isChildrenXor or parent.isChildrenOr:
+			isMandatory = false
+			optional_check.disabled = true
+		else:
+			optional_check.disabled = false
+	else: optional_check.disabled = false
+	
+	name_edit.text = featureName
+	optional_check.button_pressed = isMandatory
+	xor_check.button_pressed = isChildrenXor
+	or_check.button_pressed = isChildrenOr
+
+func add_child_node(node: FeatureNode) -> void:
+	if node and not node in children:
+		children.append(node)
+
+func remove_child_node(node: FeatureNode) -> void:
+	if node:
+		children.erase(node)
+
+func set_parent(node: GraphNode) -> void:
+	if node:
+		parent = node
+
+func clear_parent() -> void:
+	parent = null
+
+#=================================
+#Input Signals
+#=================================
+func _on_name_edit_text_changed() -> void:
+	featureName = name_edit.text
+	name_changed.emit()
+
+func _on_optional_check_toggled(toggled_on: bool) -> void:
+	isMandatory = toggled_on
+
+func _on_xor_check_toggled(toggled_on: bool) -> void:
+	isChildrenXor = toggled_on
+	for child in children:
+		child.update()
+
+func _on_or_check_toggled(toggled_on: bool) -> void:
+	isChildrenOr = toggled_on
+	for child in children:
+		child.update()
+</file>
+
+<file path="scenes/Nodes/feature_node.gd.uid">
+uid://y3rfrf1fkiqv
+</file>
+
+<file path="scenes/Nodes/feature_node.tscn">
+[gd_scene format=3 uid="uid://bqc4u7xobsat"]
+
+[ext_resource type="Script" uid="uid://y3rfrf1fkiqv" path="res://scenes/Nodes/feature_node.gd" id="1_5vm8d"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_krgwt"]
+content_margin_left = 10.0
+content_margin_top = 5.0
+content_margin_right = 10.0
+content_margin_bottom = 5.0
+bg_color = Color(0.13333334, 0.13333334, 0.13333334, 0.78431374)
+border_width_top = 2
+border_color = Color(0, 0, 0, 0.59607846)
+border_blend = true
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_oytju"]
+content_margin_left = 5.0
+content_margin_top = 5.0
+content_margin_right = 5.0
+content_margin_bottom = 5.0
+bg_color = Color(1.540184e-06, 0.4580884, 0.46046364, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_detail = 5
+
+[node name="FeatureNode" type="GraphNode" unique_id=304707198]
+custom_minimum_size = Vector2(200, 0)
+offset_right = 156.0
+offset_bottom = 55.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_krgwt")
+theme_override_styles/panel_selected = SubResource("StyleBoxFlat_krgwt")
+theme_override_styles/panel_focus = SubResource("StyleBoxFlat_krgwt")
+theme_override_styles/titlebar = SubResource("StyleBoxFlat_oytju")
+theme_override_styles/titlebar_selected = SubResource("StyleBoxFlat_oytju")
+title = "Feature"
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(0, 0.7921569, 0.79607844, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 0
+slot/0/right_color = Color(0, 0.7921569, 0.79607844, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+slot/1/left_enabled = false
+slot/1/left_type = 0
+slot/1/left_color = Color(1, 1, 1, 1)
+slot/1/left_icon = null
+slot/1/right_enabled = false
+slot/1/right_type = 0
+slot/1/right_color = Color(0, 0.7921569, 0.79607844, 1)
+slot/1/right_icon = null
+slot/1/draw_stylebox = true
+slot/2/left_enabled = false
+slot/2/left_type = 0
+slot/2/left_color = Color(1, 1, 1, 1)
+slot/2/left_icon = null
+slot/2/right_enabled = false
+slot/2/right_type = 0
+slot/2/right_color = Color(1, 1, 1, 1)
+slot/2/right_icon = null
+slot/2/draw_stylebox = true
+slot/3/left_enabled = false
+slot/3/left_type = 0
+slot/3/left_color = Color(1, 1, 1, 1)
+slot/3/left_icon = null
+slot/3/right_enabled = false
+slot/3/right_type = 0
+slot/3/right_color = Color(1, 1, 1, 1)
+slot/3/right_icon = null
+slot/3/draw_stylebox = true
+slot/4/left_enabled = false
+slot/4/left_type = 0
+slot/4/left_color = Color(1, 1, 1, 1)
+slot/4/left_icon = null
+slot/4/right_enabled = false
+slot/4/right_type = 0
+slot/4/right_color = Color(1, 1, 1, 1)
+slot/4/right_icon = null
+slot/4/draw_stylebox = true
+script = ExtResource("1_5vm8d")
+
+[node name="LabelCont" type="HBoxContainer" parent="." unique_id=1907247774]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="LabelCont" unique_id=1754105563]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Parent"
+
+[node name="Label2" type="Label" parent="LabelCont" unique_id=1221593105]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Children"
+horizontal_alignment = 2
+
+[node name="NameCont" type="HBoxContainer" parent="." unique_id=653130699]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="NameCont" unique_id=1550402419]
+layout_mode = 2
+text = "Name"
+
+[node name="TextEdit" type="TextEdit" parent="NameCont" unique_id=98110281]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/line_spacing = 0
+placeholder_text = "name"
+
+[node name="OptionalCont" type="HBoxContainer" parent="." unique_id=1444727640]
+layout_mode = 2
+
+[node name="CheckBox" type="CheckBox" parent="OptionalCont" unique_id=1876803821]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="OptionalCont" unique_id=1087537468]
+layout_mode = 2
+text = "Is Mandatory"
+
+[node name="XorCont" type="HBoxContainer" parent="." unique_id=1872236752]
+layout_mode = 2
+
+[node name="CheckBox" type="CheckBox" parent="XorCont" unique_id=557696609]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="XorCont" unique_id=1268114369]
+layout_mode = 2
+text = "Alternative Children"
+
+[node name="OrCont" type="HBoxContainer" parent="." unique_id=584573563]
+layout_mode = 2
+
+[node name="CheckBox" type="CheckBox" parent="OrCont" unique_id=234682674]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="OrCont" unique_id=651056504]
+layout_mode = 2
+text = "OR Children"
+
+[connection signal="text_changed" from="NameCont/TextEdit" to="." method="_on_name_edit_text_changed"]
+[connection signal="toggled" from="OptionalCont/CheckBox" to="." method="_on_optional_check_toggled"]
+[connection signal="toggled" from="XorCont/CheckBox" to="." method="_on_xor_check_toggled"]
+[connection signal="toggled" from="OrCont/CheckBox" to="." method="_on_or_check_toggled"]
+</file>
+
+<file path="scenes/Nodes/root_node.gd">
+extends GraphNode
+class_name RootNode
+
+signal name_changed()
+
+@onready var name_edit: TextEdit = $NameCont/TextEdit
+@onready var xor_check: CheckBox = $XorCont/CheckBox
+@onready var or_check: CheckBox = $OrCont/CheckBox
+
+
+@export var featureName : String = ""
+@export var isChildrenXor : bool = false
+@export var isChildrenOr : bool = false
+
+
+@export var children : Array[FeatureNode]
+
+func add_child_node(node: FeatureNode) -> void:
+	if node and not node in children:
+		children.append(node)
+
+func remove_child_node(node: FeatureNode) -> void:
+	if node:
+		children.erase(node)
+
+#=================================
+#Input Signals
+#=================================
+func _on_name_edit_text_changed() -> void:
+	featureName = name_edit.text
+	name_changed.emit()
+
+func _on_xor_check_toggled(toggled_on: bool) -> void:
+	isChildrenXor = toggled_on
+	for child in children:
+		child.update()
+
+func _on_or_check_toggled(toggled_on: bool) -> void:
+	isChildrenOr = toggled_on
+	for child in children:
+		child.update()
+</file>
+
+<file path="scenes/Nodes/root_node.gd.uid">
+uid://ctqob5a84y01u
+</file>
+
+<file path="scenes/Nodes/root_node.tscn">
+[gd_scene format=3 uid="uid://3tqrn06x3y11"]
+
+[ext_resource type="Script" uid="uid://ctqob5a84y01u" path="res://scenes/Nodes/root_node.gd" id="1_etkuu"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_krgwt"]
+content_margin_left = 10.0
+content_margin_top = 5.0
+content_margin_right = 10.0
+content_margin_bottom = 5.0
+bg_color = Color(0.13333334, 0.13333334, 0.13333334, 0.78431374)
+border_width_top = 2
+border_color = Color(0, 0, 0, 0.59607846)
+border_blend = true
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_oytju"]
+content_margin_left = 5.0
+content_margin_top = 5.0
+content_margin_right = 5.0
+content_margin_bottom = 5.0
+bg_color = Color(0, 0.45882353, 0.45882353, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_detail = 5
+
+[node name="RootNode" type="GraphNode" unique_id=304707198]
+custom_minimum_size = Vector2(200, 0)
+offset_right = 156.0
+offset_bottom = 55.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_krgwt")
+theme_override_styles/panel_selected = SubResource("StyleBoxFlat_krgwt")
+theme_override_styles/panel_focus = SubResource("StyleBoxFlat_krgwt")
+theme_override_styles/titlebar = SubResource("StyleBoxFlat_oytju")
+theme_override_styles/titlebar_selected = SubResource("StyleBoxFlat_oytju")
+title = "Root"
+slot/0/left_enabled = false
+slot/0/left_type = 0
+slot/0/left_color = Color(0, 0.7921569, 0.79607844, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 0
+slot/0/right_color = Color(0, 0.7921569, 0.79607844, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+slot/1/left_enabled = false
+slot/1/left_type = 0
+slot/1/left_color = Color(1, 1, 1, 1)
+slot/1/left_icon = null
+slot/1/right_enabled = false
+slot/1/right_type = 0
+slot/1/right_color = Color(0, 0.7921569, 0.79607844, 1)
+slot/1/right_icon = null
+slot/1/draw_stylebox = true
+slot/2/left_enabled = false
+slot/2/left_type = 0
+slot/2/left_color = Color(1, 1, 1, 1)
+slot/2/left_icon = null
+slot/2/right_enabled = false
+slot/2/right_type = 0
+slot/2/right_color = Color(1, 1, 1, 1)
+slot/2/right_icon = null
+slot/2/draw_stylebox = true
+slot/3/left_enabled = false
+slot/3/left_type = 0
+slot/3/left_color = Color(1, 1, 1, 1)
+slot/3/left_icon = null
+slot/3/right_enabled = false
+slot/3/right_type = 0
+slot/3/right_color = Color(1, 1, 1, 1)
+slot/3/right_icon = null
+slot/3/draw_stylebox = true
+script = ExtResource("1_etkuu")
+
+[node name="Label2" type="Label" parent="." unique_id=1221593105]
+layout_mode = 2
+text = "Children"
+horizontal_alignment = 2
+
+[node name="NameCont" type="HBoxContainer" parent="." unique_id=653130699]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="NameCont" unique_id=1550402419]
+layout_mode = 2
+text = "Name"
+
+[node name="TextEdit" type="TextEdit" parent="NameCont" unique_id=98110281]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/line_spacing = 0
+placeholder_text = "name"
+
+[node name="XorCont" type="HBoxContainer" parent="." unique_id=1872236752]
+layout_mode = 2
+
+[node name="CheckBox" type="CheckBox" parent="XorCont" unique_id=557696609]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="XorCont" unique_id=1268114369]
+layout_mode = 2
+text = "Alternative Children"
+
+[node name="OrCont" type="HBoxContainer" parent="." unique_id=584573563]
+layout_mode = 2
+
+[node name="CheckBox" type="CheckBox" parent="OrCont" unique_id=234682674]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="OrCont" unique_id=651056504]
+layout_mode = 2
+text = "OR Children"
+
+[connection signal="text_changed" from="NameCont/TextEdit" to="." method="_on_name_edit_text_changed"]
+[connection signal="toggled" from="XorCont/CheckBox" to="." method="_on_xor_check_toggled"]
+[connection signal="toggled" from="OrCont/CheckBox" to="." method="_on_or_check_toggled"]
+</file>
+
+<file path="scenes/UI/constraint_node.gd">
+extends MarginContainer
+class_name ConstNode
+
+signal delete_request(const_node: ConstNode, constraint: Constraint)
+
+var constraint : Constraint :
+	set(new_const):
+		if constraint:
+			constraint.from_node.name_changed.disconnect(_on_constraint_name_update)
+			constraint.to_node.name_changed.disconnect(_on_constraint_name_update)
+		
+		new_const.from_node.name_changed.connect(_on_constraint_name_update)
+		new_const.to_node.name_changed.connect(_on_constraint_name_update)
+		constraint = new_const
+
+@onready var text_label: Label = $PanelContainer/Label
+
+func update_text() -> void:
+	text_label.text = "  %s %s %s" % [constraint.from_node.featureName, constraint.type, constraint.to_node.featureName]
+
+func _on_delete_button_pressed() -> void:
+	delete_request.emit(self, constraint)
+
+func _on_constraint_name_update() -> void:
+	update_text()
+</file>
+
+<file path="scenes/UI/constraint_node.gd.uid">
+uid://baeljx78k3wr8
+</file>
+
+<file path="scenes/UI/constraint_node.tscn">
+[gd_scene format=3 uid="uid://c1fw68hmhp7ts"]
+
+[ext_resource type="Script" uid="uid://baeljx78k3wr8" path="res://scenes/UI/constraint_node.gd" id="1_mq3bx"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_td5r2"]
+bg_color = Color(0.6, 0, 0, 0.28627452)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mrbv8"]
+bg_color = Color(0.25, 0, 0, 0.28627452)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[node name="ConstraintNode" type="MarginContainer" unique_id=599854623]
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 0
+script = ExtResource("1_mq3bx")
+
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=508736603]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="PanelContainer" unique_id=1846833581]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 1
+
+[node name="DeleteButton" type="Button" parent="PanelContainer" unique_id=891854540]
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_styles/normal = SubResource("StyleBoxFlat_td5r2")
+theme_override_styles/hover = SubResource("StyleBoxFlat_mrbv8")
+text = "X"
+
+[connection signal="pressed" from="PanelContainer/DeleteButton" to="." method="_on_delete_button_pressed"]
+</file>
+
+</files>

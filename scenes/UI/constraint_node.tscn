@@ -1,0 +1,43 @@
+[gd_scene format=3 uid="uid://c1fw68hmhp7ts"]
+
+[ext_resource type="Script" uid="uid://baeljx78k3wr8" path="res://scenes/UI/constraint_node.gd" id="1_mq3bx"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_td5r2"]
+bg_color = Color(0.6, 0, 0, 0.28627452)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mrbv8"]
+bg_color = Color(0.25, 0, 0, 0.28627452)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[node name="ConstraintNode" type="MarginContainer" unique_id=599854623]
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 0
+script = ExtResource("1_mq3bx")
+
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=508736603]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="PanelContainer" unique_id=1846833581]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 1
+
+[node name="DeleteButton" type="Button" parent="PanelContainer" unique_id=891854540]
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_styles/normal = SubResource("StyleBoxFlat_td5r2")
+theme_override_styles/hover = SubResource("StyleBoxFlat_mrbv8")
+text = "X"
+
+[connection signal="pressed" from="PanelContainer/DeleteButton" to="." method="_on_delete_button_pressed"]
