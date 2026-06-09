@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://cbv01snf8ohvg"]
+
+[ext_resource type="Script" uid="uid://c1xplksocnw6v" path="res://scenes/instance_view/feature_item.gd" id="1_356ar"]
+
+[node name="FeatureItem" type="PanelContainer" unique_id=1056090416]
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_356ar")
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1070572865]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 4
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer" unique_id=433185932]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Check" type="TextureRect" parent="MarginContainer/HBoxContainer" unique_id=2137421946]
+visible = false
+custom_minimum_size = Vector2(14, 14)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="Label" type="Label" parent="MarginContainer/HBoxContainer" unique_id=1990145452]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Feature"
+
+[node name="Badge" type="Label" parent="MarginContainer/HBoxContainer" unique_id=1853554940]
+visible = false
+layout_mode = 2
+text = "ALT"

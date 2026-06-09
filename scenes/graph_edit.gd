@@ -23,6 +23,9 @@ func add_to_nodes(node: BaseFeatureNode) -> void:
 	nodes.append(node)
 	update_nodes.connect(node.update if node.has_method("update") else func(): pass)
 
+func publish_model() -> void:
+	FeatureModelData.publish($RootNode, constraints)
+
 func _on_add_node_button_pressed() -> void:
 	var new_node: FeatureNode = FEATURE_NODE.instantiate()
 	add_child(new_node)

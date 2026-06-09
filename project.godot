@@ -11,9 +11,14 @@ config_version=5
 [application]
 
 config/name="FeatureModel Environment"
-run/main_scene="uid://dpedhqcy23qj3"
+run/main_scene="uid://qe101qbmmlds"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
+
+[autoload]
+
+FeatureModelExporter="*uid://vhprea13tde6"
+FeatureModelData="*uid://bcd41lnmkp7gu"
 
 [display]
 

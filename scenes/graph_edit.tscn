@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" uid="uid://c8fljvv0x6iyl" path="res://scenes/graph_edit.gd" id="1_snvmi"]
 [ext_resource type="PackedScene" uid="uid://3tqrn06x3y11" path="res://scenes/Nodes/root_node.tscn" id="2_pqprv"]
-[ext_resource type="Script" uid="uid://vhprea13tde6" path="res://feature_model_exporter.gd" id="3_0pfwd"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0pfwd"]
 bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
@@ -89,7 +88,7 @@ corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
 corner_detail = 5
 
-[node name="UI" type="Panel" unique_id=1345218056]
+[node name="Editor" type="Panel" unique_id=1345218056]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -97,38 +96,33 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_0pfwd")
 
-[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=1320361278]
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=96303073]
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = 15
 anchor_right = 1.0
-offset_left = 10.0
-offset_top = 9.0
-offset_right = -10.0
-offset_bottom = 45.0
+anchor_bottom = 1.0
 grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer" unique_id=1320361278]
+layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="AddNodeButton" type="Button" parent="HBoxContainer" unique_id=840578435]
+[node name="AddNodeButton" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=840578435]
 layout_mode = 2
 text = "Add Node +"
 
-[node name="AddConstraintButton" type="Button" parent="HBoxContainer" unique_id=1527485216]
+[node name="AddConstraintButton" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=1527485216]
 layout_mode = 2
 text = "Add Constraint +"
 
-[node name="SaveXmlButton" type="Button" parent="HBoxContainer" unique_id=80336211]
+[node name="SaveXmlButton" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=80336211]
 layout_mode = 2
 text = "Save to .xml"
 
-[node name="GraphEdit" type="GraphEdit" parent="." unique_id=532163189]
-layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_top = -594.0
-grow_horizontal = 2
-grow_vertical = 0
+[node name="GraphEdit" type="GraphEdit" parent="VBoxContainer" unique_id=532163189]
+layout_mode = 2
+size_flags_vertical = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_qdvp5")
 snapping_enabled = false
 right_disconnects = true
@@ -138,7 +132,7 @@ show_minimap_button = false
 show_arrange_button = false
 script = ExtResource("1_snvmi")
 
-[node name="RootNode" parent="GraphEdit" unique_id=304707198 instance=ExtResource("2_pqprv")]
+[node name="RootNode" parent="VBoxContainer/GraphEdit" unique_id=304707198 instance=ExtResource("2_pqprv")]
 layout_mode = 0
 offset_left = 108.0
 offset_top = 177.0
@@ -147,10 +141,7 @@ offset_bottom = 327.0
 mouse_filter = 1
 position_offset = Vector2(108, 177)
 
-[node name="FeatureModelExporter" type="Node" parent="GraphEdit" unique_id=187033098]
-script = ExtResource("3_0pfwd")
-
-[node name="AddConstWindow" type="PanelContainer" parent="GraphEdit" unique_id=1612486392]
+[node name="AddConstWindow" type="PanelContainer" parent="VBoxContainer/GraphEdit" unique_id=1612486392]
 visible = false
 z_index = 2
 layout_mode = 1
@@ -167,50 +158,50 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_w1f5q")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="GraphEdit/AddConstWindow" unique_id=1598292540]
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/GraphEdit/AddConstWindow" unique_id=1598292540]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="PanelContainer" type="PanelContainer" parent="GraphEdit/AddConstWindow/VBoxContainer" unique_id=501336607]
+[node name="PanelContainer" type="PanelContainer" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer" unique_id=501336607]
 custom_minimum_size = Vector2(300, 30)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_bkvrj")
 
-[node name="Label" type="Label" parent="GraphEdit/AddConstWindow/VBoxContainer/PanelContainer" unique_id=1397528411]
+[node name="Label" type="Label" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/PanelContainer" unique_id=1397528411]
 layout_mode = 2
 text = " Add a constraint"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="GraphEdit/AddConstWindow/VBoxContainer" unique_id=613090438]
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer" unique_id=613090438]
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 alignment = 1
 
-[node name="VSeparator2" type="VSeparator" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1386820517]
+[node name="VSeparator2" type="VSeparator" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1386820517]
 custom_minimum_size = Vector2(20, 0)
 layout_mode = 2
 theme_override_styles/separator = SubResource("StyleBoxEmpty_0pfwd")
 
-[node name="Label" type="Label" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1322942761]
+[node name="Label" type="Label" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1322942761]
 layout_mode = 2
 text = "From:"
 
-[node name="FromOptionBtn" type="OptionButton" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1437919050]
+[node name="FromOptionBtn" type="OptionButton" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1437919050]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 item_count = 1
 popup/item_0/text = "null"
 popup/item_0/id = 0
 
-[node name="VSeparator" type="VSeparator" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=354575897]
+[node name="VSeparator" type="VSeparator" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=354575897]
 custom_minimum_size = Vector2(20, 0)
 layout_mode = 2
 theme_override_styles/separator = SubResource("StyleBoxEmpty_0pfwd")
 
-[node name="Label2" type="Label" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=566240413]
+[node name="Label2" type="Label" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=566240413]
 layout_mode = 2
 text = "Type:"
 
-[node name="TypeOptionBtn" type="OptionButton" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=2000284071]
+[node name="TypeOptionBtn" type="OptionButton" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=2000284071]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 item_count = 2
@@ -219,43 +210,43 @@ popup/item_0/id = 0
 popup/item_1/text = "excludes"
 popup/item_1/id = 1
 
-[node name="VSeparator3" type="VSeparator" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=2079250014]
+[node name="VSeparator3" type="VSeparator" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=2079250014]
 custom_minimum_size = Vector2(20, 0)
 layout_mode = 2
 theme_override_styles/separator = SubResource("StyleBoxEmpty_psqnr")
 
-[node name="Label3" type="Label" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1922971421]
+[node name="Label3" type="Label" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1922971421]
 layout_mode = 2
 text = "To:"
 
-[node name="ToOptionBtn" type="OptionButton" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1718305016]
+[node name="ToOptionBtn" type="OptionButton" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1718305016]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 item_count = 1
 popup/item_0/text = "null"
 popup/item_0/id = 0
 
-[node name="VSeparator4" type="VSeparator" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1767443326]
+[node name="VSeparator4" type="VSeparator" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1767443326]
 custom_minimum_size = Vector2(20, 0)
 layout_mode = 2
 theme_override_styles/separator = SubResource("StyleBoxEmpty_0pfwd")
 
-[node name="HBoxContainer2" type="HBoxContainer" parent="GraphEdit/AddConstWindow/VBoxContainer" unique_id=1320032081]
+[node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer" unique_id=1320032081]
 layout_mode = 2
 theme_override_constants/separation = 25
 alignment = 1
 
-[node name="CancelButton" type="Button" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2" unique_id=1118422553]
+[node name="CancelButton" type="Button" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2" unique_id=1118422553]
 custom_minimum_size = Vector2(100, 30)
 layout_mode = 2
 text = "Cancel"
 
-[node name="AddButton" type="Button" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2" unique_id=1401744430]
+[node name="AddButton" type="Button" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2" unique_id=1401744430]
 custom_minimum_size = Vector2(100, 30)
 layout_mode = 2
 text = "Add"
 
-[node name="FoldableContainer" type="FoldableContainer" parent="GraphEdit" unique_id=735768490]
+[node name="FoldableContainer" type="FoldableContainer" parent="VBoxContainer/GraphEdit" unique_id=735768490]
 z_index = 1
 layout_mode = 1
 anchors_preset = 1
@@ -274,19 +265,19 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_q8srt")
 folded = true
 title = "Constraints"
 
-[node name="ScrollContainer" type="ScrollContainer" parent="GraphEdit/FoldableContainer" unique_id=1643975150]
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer/GraphEdit/FoldableContainer" unique_id=1643975150]
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ConstraintsCont" type="VBoxContainer" parent="GraphEdit/FoldableContainer/ScrollContainer" unique_id=1569093485]
+[node name="ConstraintsCont" type="VBoxContainer" parent="VBoxContainer/GraphEdit/FoldableContainer/ScrollContainer" unique_id=1569093485]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[connection signal="pressed" from="HBoxContainer/AddNodeButton" to="GraphEdit" method="_on_add_node_button_pressed"]
-[connection signal="pressed" from="HBoxContainer/AddConstraintButton" to="GraphEdit" method="_on_add_constraint_button_pressed"]
-[connection signal="pressed" from="HBoxContainer/SaveXmlButton" to="GraphEdit" method="_on_save_xml_button_pressed"]
-[connection signal="connection_request" from="GraphEdit" to="GraphEdit" method="_on_connection_request"]
-[connection signal="disconnection_request" from="GraphEdit" to="GraphEdit" method="_on_disconnection_request"]
-[connection signal="pressed" from="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2/CancelButton" to="GraphEdit" method="_on_add_const_cancel_button_pressed"]
-[connection signal="pressed" from="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2/AddButton" to="GraphEdit" method="_on_add_const_add_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/AddNodeButton" to="VBoxContainer/GraphEdit" method="_on_add_node_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/AddConstraintButton" to="VBoxContainer/GraphEdit" method="_on_add_constraint_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/SaveXmlButton" to="VBoxContainer/GraphEdit" method="_on_save_xml_button_pressed"]
+[connection signal="connection_request" from="VBoxContainer/GraphEdit" to="VBoxContainer/GraphEdit" method="_on_connection_request"]
+[connection signal="disconnection_request" from="VBoxContainer/GraphEdit" to="VBoxContainer/GraphEdit" method="_on_disconnection_request"]
+[connection signal="pressed" from="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2/CancelButton" to="VBoxContainer/GraphEdit" method="_on_add_const_cancel_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2/AddButton" to="VBoxContainer/GraphEdit" method="_on_add_const_add_button_pressed"]

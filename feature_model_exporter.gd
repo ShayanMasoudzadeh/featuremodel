@@ -1,5 +1,5 @@
 extends Node
-class_name FeatureModelExporter
+#class_name FeatureModelExporter
 
 # ── public API ────────────────────────────────────────────────────────────────
 
