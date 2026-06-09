@@ -53,6 +53,8 @@ project.godot
 scenes/graph_edit.gd
 scenes/graph_edit.gd.uid
 scenes/graph_edit.tscn
+scenes/Nodes/base_feature_node.gd
+scenes/Nodes/base_feature_node.gd.uid
 scenes/Nodes/feature_node.gd
 scenes/Nodes/feature_node.gd.uid
 scenes/Nodes/feature_node.tscn
@@ -89,9 +91,9 @@ charset = utf-8
 extends Resource
 class_name Constraint
 
-var type : String
-var from_node : GraphNode
-var to_node : GraphNode
+var type: String
+var from_node: BaseFeatureNode
+var to_node: BaseFeatureNode
 </file>
 
 <file path="constraint.gd.uid">
@@ -100,11 +102,10 @@ uid://bgj0vgpytfypk
 
 <file path="feature_model_exporter.gd">
 extends Node
-class_name FeatureModelExporter
 
 # ── public API ────────────────────────────────────────────────────────────────
 
-static func save(root: FeatureNode, constraints: Array[Constraint], path: String) -> void:
+static func save(root: BaseFeatureNode, constraints: Array[Constraint], path: String) -> void:
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		push_error("FeatureModelExporter: cannot open '%s'" % path)
@@ -113,7 +114,7 @@ static func save(root: FeatureNode, constraints: Array[Constraint], path: String
 
 # ── XML builder ───────────────────────────────────────────────────────────────
 
-static func _build_xml(root: FeatureNode, constraints: Array[Constraint]) -> String:
+static func _build_xml(root: BaseFeatureNode, constraints: Array[Constraint]) -> String:
 	return "\n".join([
 		'<?xml version="1.0" encoding="UTF-8"?>',
 		"<featureModel>",
@@ -126,10 +127,10 @@ static func _build_xml(root: FeatureNode, constraints: Array[Constraint]) -> Str
 
 # ── struct serializer ─────────────────────────────────────────────────────────
 
-static func _serialize_node(node: FeatureNode, depth: int) -> String:
+static func _serialize_node(node: BaseFeatureNode, depth: int) -> String:
 	var pad  := "  ".repeat(depth)
-	var name := ' name="%s"'       % _escape(node.featureName)
-	var mand := ' mandatory="true"' if node.isMandatory else ""
+	var name := ' name="%s"'        % _escape(node.featureName)
+	var mand := ' mandatory="true"' if (node is FeatureNode and (node as FeatureNode).isMandatory) else ""
 
 	if node.children.is_empty():
 		return pad + "<feature%s%s/>" % [name, mand]
@@ -162,15 +163,8 @@ static func _serialize_constraints(constraints: Array[Constraint]) -> String:
 	return "\n".join(lines)
 
 static func _serialize_rule(c: Constraint) -> String:
-	var from := (c.from_node as FeatureNode)
-	var to   := (c.to_node   as FeatureNode)
-
-	if from == null or to == null:
-		push_warning("FeatureModelExporter: constraint has a non-FeatureNode endpoint, skipping.")
-		return ""
-
-	var a := _escape(from.featureName)
-	var b := _escape(to.featureName)
+	var a := _escape(c.from_node.featureName)
+	var b := _escape(c.to_node.featureName)
 
 	# FeatureIDE propositional logic:
 	#   requires → A ⇒  B        <imp><var>A</var><var>B</var></imp>
@@ -281,6 +275,10 @@ run/main_scene="uid://dpedhqcy23qj3"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
 
+[autoload]
+
+FeatureModelExporter="*uid://vhprea13tde6"
+
 [display]
 
 window/stretch/mode="canvas_items"
@@ -300,83 +298,71 @@ extends GraphEdit
 
 signal update_nodes()
 
-#Add Constraint Window nodes
-@onready var add_const_window: PanelContainer = $AddConstWindow
-@onready var from_option_btn: OptionButton = $AddConstWindow/VBoxContainer/HBoxContainer/FromOptionBtn
-@onready var type_option_btn: OptionButton = $AddConstWindow/VBoxContainer/HBoxContainer/TypeOptionBtn
-@onready var to_option_btn: OptionButton = $AddConstWindow/VBoxContainer/HBoxContainer/ToOptionBtn
+# Add Constraint Window nodes
+@onready var add_const_window: PanelContainer = $"../AddConstWindow"
+@onready var from_option_btn: OptionButton = $"../AddConstWindow/VBoxContainer/HBoxContainer/FromOptionBtn"
+@onready var type_option_btn: OptionButton = $"../AddConstWindow/VBoxContainer/HBoxContainer/TypeOptionBtn"
+@onready var to_option_btn: OptionButton = $"../AddConstWindow/VBoxContainer/HBoxContainer/ToOptionBtn"
 
-
-@onready var constraints_cont: VBoxContainer = $FoldableContainer/ScrollContainer/ConstraintsCont
+@onready var constraints_cont: VBoxContainer = $"../FoldableContainer/ScrollContainer/ConstraintsCont"
 const CONSTRAINT_NODE = preload("uid://c1fw68hmhp7ts")
 
-var nodes : Array[GraphNode] = []
-var constraints : Array[Constraint] = []
+var nodes: Array[BaseFeatureNode] = []
+var constraints: Array[Constraint] = []
 
 const FEATURE_NODE = preload("uid://bqc4u7xobsat")
 
 func _ready() -> void:
 	add_to_nodes($RootNode)
 
-func add_to_nodes(node: GraphNode) -> void:
+func add_to_nodes(node: BaseFeatureNode) -> void:
 	nodes.append(node)
-	if node is FeatureNode:
-		var fnode = node as FeatureNode
-		update_nodes.connect(fnode.update)
+	update_nodes.connect(node.update if node.has_method("update") else func(): pass)
 
 func _on_add_node_button_pressed() -> void:
-	var new_node = FEATURE_NODE.instantiate()
+	var new_node: FeatureNode = FEATURE_NODE.instantiate()
 	add_child(new_node)
 	add_to_nodes(new_node)
 
 func _on_connection_request(from_node: StringName, from_port: int, to_node: StringName, to_port: int) -> void:
-	var from = get_node(String(from_node))
-	if from is FeatureNode: from = (from as FeatureNode)
-	elif from is RootNode: from = from as RootNode
-	var to = (get_node(String(to_node)) as FeatureNode)
-	
+	var from: BaseFeatureNode = get_node(String(from_node)) as BaseFeatureNode
+	var to: FeatureNode = get_node(String(to_node)) as FeatureNode
+	if from == null or to == null:
+		return
+
 	for connection in connections:
 		if connection["to_node"] == to_node:
 			_on_disconnection_request(connection["from_node"], connection["from_port"], to_node, to_port)
 			break
-	
+
 	from.add_child_node(to)
 	to.set_parent(from)
-	print("%s to %s" % [from_port, to_port])
 	connect_node(from_node, from_port, to_node, to_port)
 	update_nodes.emit()
 
-
 func _on_disconnection_request(from_node: StringName, from_port: int, to_node: StringName, to_port: int) -> void:
-	var from = get_node(String(from_node))
-	if from is FeatureNode: from = (from as FeatureNode)
-	elif from is RootNode: from = from as RootNode
-	var to = (get_node(String(to_node)) as FeatureNode)
-	
+	var from: BaseFeatureNode = get_node(String(from_node)) as BaseFeatureNode
+	var to: FeatureNode = get_node(String(to_node)) as FeatureNode
+	if from == null or to == null:
+		return
+
 	from.remove_child_node(to)
 	to.clear_parent()
 	disconnect_node(from_node, from_port, to_node, to_port)
 	update_nodes.emit()
-	
 
 func _on_save_xml_button_pressed() -> void:
-	var temp_root = FeatureNode.new()
-	temp_root.featureName = $RootNode.featureName
-	temp_root.isMandatory = true
-	temp_root.isChildrenXor = $RootNode.isChildrenXor
-	temp_root.isChildrenOr = $RootNode.isChildrenOr
-	temp_root.children = $RootNode.children
-	
-	$FeatureModelExporter.save(temp_root, constraints, "user://feature_model.xml")
+	var root: BaseFeatureNode = $RootNode
+	FeatureModelExporter.save(root, constraints, "user://feature_model.xml")
 
-func add_constraint(from_feature: GraphNode, to_feature: GraphNode, type: String) -> void:
-	var constraint : Constraint = Constraint.new()
+func add_constraint(from_feature: BaseFeatureNode, to_feature: BaseFeatureNode, type: String) -> void:
+	var constraint: Constraint = Constraint.new()
 	constraint.from_node = from_feature
 	constraint.type = type
 	constraint.to_node = to_feature
 	constraints.append(constraint)
-	
-	var const_node : ConstNode = CONSTRAINT_NODE.instantiate()
+
+	var const_node: ConstNode = CONSTRAINT_NODE.instantiate()
 	const_node.constraint = constraint
 	const_node.delete_request.connect(on_remove_constraint)
 	constraints_cont.add_child(const_node)
@@ -391,9 +377,6 @@ func _on_add_constraint_button_pressed() -> void:
 	update_const_option_btns()
 
 func _on_add_const_cancel_button_pressed() -> void:
-	from_option_btn.selected = -1
-	type_option_btn.selected = -1
-	to_option_btn.selected = -1
 	add_const_window.visible = false
 
 func _on_add_const_add_button_pressed() -> void:
@@ -403,22 +386,24 @@ func _on_add_const_add_button_pressed() -> void:
 			return
 	if from_option_btn.selected == to_option_btn.selected:
 		return
-	
-	add_constraint(nodes[from_option_btn.selected], 
-		nodes[to_option_btn.selected], 
-		type_option_btn.get_item_text(type_option_btn.selected))
-	
+
+	add_constraint(
+		nodes[from_option_btn.selected],
+		nodes[to_option_btn.selected],
+		type_option_btn.get_item_text(type_option_btn.selected)
+	)
+
 	$FoldableContainer.folded = false
 	add_const_window.visible = false
 
 func update_const_option_btns() -> void:
 	from_option_btn.clear()
 	to_option_btn.clear()
-	
+
 	for node in nodes:
 		from_option_btn.add_item(node.featureName)
 		to_option_btn.add_item(node.featureName)
-	
+
 	from_option_btn.selected = -1
 	to_option_btn.selected = -1
 </file>
@@ -432,7 +417,6 @@ uid://c8fljvv0x6iyl
 
 [ext_resource type="Script" uid="uid://c8fljvv0x6iyl" path="res://scenes/graph_edit.gd" id="1_snvmi"]
 [ext_resource type="PackedScene" uid="uid://3tqrn06x3y11" path="res://scenes/Nodes/root_node.tscn" id="2_pqprv"]
-[ext_resource type="Script" uid="uid://vhprea13tde6" path="res://feature_model_exporter.gd" id="3_0pfwd"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0pfwd"]
 bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
@@ -577,10 +561,7 @@ offset_bottom = 327.0
 mouse_filter = 1
 position_offset = Vector2(108, 177)
 
-[node name="FeatureModelExporter" type="Node" parent="GraphEdit" unique_id=187033098]
-script = ExtResource("3_0pfwd")
-
-[node name="AddConstWindow" type="PanelContainer" parent="GraphEdit" unique_id=1612486392]
+[node name="AddConstWindow" type="PanelContainer" parent="." unique_id=1612486392]
 visible = false
 z_index = 2
 layout_mode = 1
@@ -589,58 +570,58 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
+offset_left = -263.5
+offset_top = -44.5
+offset_right = 263.5
+offset_bottom = 98.5
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_w1f5q")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="GraphEdit/AddConstWindow" unique_id=1598292540]
+[node name="VBoxContainer" type="VBoxContainer" parent="AddConstWindow" unique_id=1598292540]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="PanelContainer" type="PanelContainer" parent="GraphEdit/AddConstWindow/VBoxContainer" unique_id=501336607]
+[node name="PanelContainer" type="PanelContainer" parent="AddConstWindow/VBoxContainer" unique_id=501336607]
 custom_minimum_size = Vector2(300, 30)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_bkvrj")
 
-[node name="Label" type="Label" parent="GraphEdit/AddConstWindow/VBoxContainer/PanelContainer" unique_id=1397528411]
+[node name="Label" type="Label" parent="AddConstWindow/VBoxContainer/PanelContainer" unique_id=1397528411]
 layout_mode = 2
 text = " Add a constraint"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="GraphEdit/AddConstWindow/VBoxContainer" unique_id=613090438]
+[node name="HBoxContainer" type="HBoxContainer" parent="AddConstWindow/VBoxContainer" unique_id=613090438]
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 alignment = 1
 
-[node name="VSeparator2" type="VSeparator" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1386820517]
+[node name="VSeparator2" type="VSeparator" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1386820517]
 custom_minimum_size = Vector2(20, 0)
 layout_mode = 2
 theme_override_styles/separator = SubResource("StyleBoxEmpty_0pfwd")
 
-[node name="Label" type="Label" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1322942761]
+[node name="Label" type="Label" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1322942761]
 layout_mode = 2
 text = "From:"
 
-[node name="FromOptionBtn" type="OptionButton" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1437919050]
+[node name="FromOptionBtn" type="OptionButton" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1437919050]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 item_count = 1
 popup/item_0/text = "null"
 popup/item_0/id = 0
 
-[node name="VSeparator" type="VSeparator" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=354575897]
+[node name="VSeparator" type="VSeparator" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=354575897]
 custom_minimum_size = Vector2(20, 0)
 layout_mode = 2
 theme_override_styles/separator = SubResource("StyleBoxEmpty_0pfwd")
 
-[node name="Label2" type="Label" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=566240413]
+[node name="Label2" type="Label" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=566240413]
 layout_mode = 2
 text = "Type:"
 
-[node name="TypeOptionBtn" type="OptionButton" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=2000284071]
+[node name="TypeOptionBtn" type="OptionButton" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=2000284071]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 item_count = 2
@@ -649,52 +630,52 @@ popup/item_0/id = 0
 popup/item_1/text = "excludes"
 popup/item_1/id = 1
 
-[node name="VSeparator3" type="VSeparator" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=2079250014]
+[node name="VSeparator3" type="VSeparator" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=2079250014]
 custom_minimum_size = Vector2(20, 0)
 layout_mode = 2
 theme_override_styles/separator = SubResource("StyleBoxEmpty_psqnr")
 
-[node name="Label3" type="Label" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1922971421]
+[node name="Label3" type="Label" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1922971421]
 layout_mode = 2
 text = "To:"
 
-[node name="ToOptionBtn" type="OptionButton" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1718305016]
+[node name="ToOptionBtn" type="OptionButton" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1718305016]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 item_count = 1
 popup/item_0/text = "null"
 popup/item_0/id = 0
 
-[node name="VSeparator4" type="VSeparator" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1767443326]
+[node name="VSeparator4" type="VSeparator" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1767443326]
 custom_minimum_size = Vector2(20, 0)
 layout_mode = 2
 theme_override_styles/separator = SubResource("StyleBoxEmpty_0pfwd")
 
-[node name="HBoxContainer2" type="HBoxContainer" parent="GraphEdit/AddConstWindow/VBoxContainer" unique_id=1320032081]
+[node name="HBoxContainer2" type="HBoxContainer" parent="AddConstWindow/VBoxContainer" unique_id=1320032081]
 layout_mode = 2
 theme_override_constants/separation = 25
 alignment = 1
 
-[node name="CancelButton" type="Button" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2" unique_id=1118422553]
+[node name="CancelButton" type="Button" parent="AddConstWindow/VBoxContainer/HBoxContainer2" unique_id=1118422553]
 custom_minimum_size = Vector2(100, 30)
 layout_mode = 2
 text = "Cancel"
 
-[node name="AddButton" type="Button" parent="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2" unique_id=1401744430]
+[node name="AddButton" type="Button" parent="AddConstWindow/VBoxContainer/HBoxContainer2" unique_id=1401744430]
 custom_minimum_size = Vector2(100, 30)
 layout_mode = 2
 text = "Add"
 
-[node name="FoldableContainer" type="FoldableContainer" parent="GraphEdit" unique_id=735768490]
+[node name="FoldableContainer" type="FoldableContainer" parent="." unique_id=735768490]
 z_index = 1
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -319.0
-offset_top = 10.0
+offset_top = 64.0
 offset_right = -17.0
-offset_bottom = 414.0
+offset_bottom = 468.0
 grow_horizontal = 0
 theme_override_styles/title_panel = SubResource("StyleBoxFlat_psqnr")
 theme_override_styles/title_hover_panel = SubResource("StyleBoxFlat_7w68q")
@@ -704,12 +685,12 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_q8srt")
 folded = true
 title = "Constraints"
 
-[node name="ScrollContainer" type="ScrollContainer" parent="GraphEdit/FoldableContainer" unique_id=1643975150]
+[node name="ScrollContainer" type="ScrollContainer" parent="FoldableContainer" unique_id=1643975150]
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ConstraintsCont" type="VBoxContainer" parent="GraphEdit/FoldableContainer/ScrollContainer" unique_id=1569093485]
+[node name="ConstraintsCont" type="VBoxContainer" parent="FoldableContainer/ScrollContainer" unique_id=1569093485]
 layout_mode = 2
 size_flags_horizontal = 3
 
@@ -718,43 +699,21 @@ size_flags_horizontal = 3
 [connection signal="pressed" from="HBoxContainer/SaveXmlButton" to="GraphEdit" method="_on_save_xml_button_pressed"]
 [connection signal="connection_request" from="GraphEdit" to="GraphEdit" method="_on_connection_request"]
 [connection signal="disconnection_request" from="GraphEdit" to="GraphEdit" method="_on_disconnection_request"]
-[connection signal="pressed" from="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2/CancelButton" to="GraphEdit" method="_on_add_const_cancel_button_pressed"]
-[connection signal="pressed" from="GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2/AddButton" to="GraphEdit" method="_on_add_const_add_button_pressed"]
+[connection signal="pressed" from="AddConstWindow/VBoxContainer/HBoxContainer2/CancelButton" to="GraphEdit" method="_on_add_const_cancel_button_pressed"]
+[connection signal="pressed" from="AddConstWindow/VBoxContainer/HBoxContainer2/AddButton" to="GraphEdit" method="_on_add_const_add_button_pressed"]
 </file>
 
-<file path="scenes/Nodes/feature_node.gd">
+<file path="scenes/Nodes/base_feature_node.gd">
 extends GraphNode
-class_name FeatureNode
+class_name BaseFeatureNode
 
 signal name_changed()
 
-@onready var name_edit: TextEdit = $NameCont/TextEdit
-@onready var optional_check: CheckBox = $OptionalCont/CheckBox
-@onready var xor_check: CheckBox = $XorCont/CheckBox
-@onready var or_check: CheckBox = $OrCont/CheckBox
+@export var featureName: String = ""
+@export var isChildrenXor: bool = false
+@export var isChildrenOr: bool = false
 
-@export var featureName : String = ""
-@export var isMandatory : bool = false
-@export var isChildrenXor : bool = false
-@export var isChildrenOr : bool = false
-
-@export var parent : GraphNode
-@export var children : Array[FeatureNode]
-
-
-func update() -> void:
-	if parent:
-		if parent.isChildrenXor or parent.isChildrenOr:
-			isMandatory = false
-			optional_check.disabled = true
-		else:
-			optional_check.disabled = false
-	else: optional_check.disabled = false
-	
-	name_edit.text = featureName
-	optional_check.button_pressed = isMandatory
-	xor_check.button_pressed = isChildrenXor
-	or_check.button_pressed = isChildrenOr
+@export var children: Array[FeatureNode] = []
 
 func add_child_node(node: FeatureNode) -> void:
 	if node and not node in children:
@@ -764,23 +723,9 @@ func remove_child_node(node: FeatureNode) -> void:
 	if node:
 		children.erase(node)
 
-func set_parent(node: GraphNode) -> void:
-	if node:
-		parent = node
-
-func clear_parent() -> void:
-	parent = null
-
 #=================================
-#Input Signals
+# Input Signals
 #=================================
-func _on_name_edit_text_changed() -> void:
-	featureName = name_edit.text
-	name_changed.emit()
-
-func _on_optional_check_toggled(toggled_on: bool) -> void:
-	isMandatory = toggled_on
-
 func _on_xor_check_toggled(toggled_on: bool) -> void:
 	isChildrenXor = toggled_on
 	for child in children:
@@ -790,6 +735,55 @@ func _on_or_check_toggled(toggled_on: bool) -> void:
 	isChildrenOr = toggled_on
 	for child in children:
 		child.update()
+</file>
+
+<file path="scenes/Nodes/base_feature_node.gd.uid">
+uid://cnulhnk1t14xo
+</file>
+
+<file path="scenes/Nodes/feature_node.gd">
+extends BaseFeatureNode
+class_name FeatureNode
+
+@onready var name_edit: TextEdit = $NameCont/TextEdit
+@onready var optional_check: CheckBox = $OptionalCont/CheckBox
+@onready var xor_check: CheckBox = $XorCont/CheckBox
+@onready var or_check: CheckBox = $OrCont/CheckBox
+
+@export var isMandatory: bool = false
+@export var parent: GraphNode = null
+
+func update() -> void:
+	if parent:
+		if parent.isChildrenXor or parent.isChildrenOr:
+			isMandatory = false
+			optional_check.disabled = true
+		else:
+			optional_check.disabled = false
+	else:
+		optional_check.disabled = false
+
+	name_edit.text = featureName
+	optional_check.button_pressed = isMandatory
+	xor_check.button_pressed = isChildrenXor
+	or_check.button_pressed = isChildrenOr
+
+func set_parent(node: GraphNode) -> void:
+	if node:
+		parent = node
+
+func clear_parent() -> void:
+	parent = null
+
+#=================================
+# Input Signals
+#=================================
+func _on_name_edit_text_changed() -> void:
+	featureName = name_edit.text
+	name_changed.emit()
+
+func _on_optional_check_toggled(toggled_on: bool) -> void:
+	isMandatory = toggled_on
 </file>
 
 <file path="scenes/Nodes/feature_node.gd.uid">
@@ -946,47 +940,19 @@ text = "OR Children"
 </file>
 
 <file path="scenes/Nodes/root_node.gd">
-extends GraphNode
+extends BaseFeatureNode
 class_name RootNode
-
-signal name_changed()
 
 @onready var name_edit: TextEdit = $NameCont/TextEdit
 @onready var xor_check: CheckBox = $XorCont/CheckBox
 @onready var or_check: CheckBox = $OrCont/CheckBox
 
-
-@export var featureName : String = ""
-@export var isChildrenXor : bool = false
-@export var isChildrenOr : bool = false
-
-
-@export var children : Array[FeatureNode]
-
-func add_child_node(node: FeatureNode) -> void:
-	if node and not node in children:
-		children.append(node)
-
-func remove_child_node(node: FeatureNode) -> void:
-	if node:
-		children.erase(node)
-
 #=================================
-#Input Signals
+# Input Signals
 #=================================
 func _on_name_edit_text_changed() -> void:
 	featureName = name_edit.text
 	name_changed.emit()
-
-func _on_xor_check_toggled(toggled_on: bool) -> void:
-	isChildrenXor = toggled_on
-	for child in children:
-		child.update()
-
-func _on_or_check_toggled(toggled_on: bool) -> void:
-	isChildrenOr = toggled_on
-	for child in children:
-		child.update()
 </file>
 
 <file path="scenes/Nodes/root_node.gd.uid">

@@ -43,6 +43,10 @@ size_flags_horizontal = 3
 layout_mode = 2
 text = "Reset"
 
+[node name="SaveButton" type="Button" parent="TopBar" unique_id=1162032197]
+layout_mode = 2
+text = "Save .xml"
+
 [node name="ScrollContainer" type="ScrollContainer" parent="." unique_id=1954590089]
 layout_mode = 1
 anchors_preset = -1
@@ -57,3 +61,4 @@ grow_vertical = 0
 layout_mode = 2
 
 [connection signal="pressed" from="TopBar/ResetButton" to="." method="_on_reset_button_pressed"]
+[connection signal="pressed" from="TopBar/SaveButton" to="." method="_on_save_instance_button_pressed"]

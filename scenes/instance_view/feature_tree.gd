@@ -190,6 +190,20 @@ func _get_parent_of(feature: BaseFeatureNode) -> BaseFeatureNode:
 			return fn.parent as BaseFeatureNode
 	return null
 
+# ── Public API ────────────────────────────────────────────────────────────────
+
+# Returns Array of Dictionaries: {feature: BaseFeatureNode, selected: bool, automatic: bool}
+func get_selection() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for feature in _item_map.keys():
+		var item: FeatureItem = _item_map[feature]
+		result.append({
+			"feature": feature,
+			"selected": item.is_selected or item.is_locked,
+			"automatic": item.locked_by_mandatory or item.is_locked,
+		})
+	return result
+
 # ── Constraint propagation ────────────────────────────────────────────────────
 
 func _propagate_constraints() -> void:

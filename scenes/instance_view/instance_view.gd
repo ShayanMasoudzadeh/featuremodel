@@ -1,14 +1,11 @@
 extends Control
 class_name InstanceView
 
-@onready var scroll: ScrollContainer = $ScrollContainer
 @onready var feature_tree: FeatureTree = $ScrollContainer/FeatureTree
 @onready var status_label: Label = $TopBar/StatusLabel
-@onready var reset_btn: Button = $TopBar/ResetButton
 
 func _ready() -> void:
 	FeatureModelData.model_changed.connect(_on_model_changed)
-	# If a model is already loaded (e.g. tab switched after model was built), build immediately
 	if FeatureModelData.root != null:
 		_rebuild()
 
@@ -24,3 +21,10 @@ func _rebuild() -> void:
 
 func _on_reset_button_pressed() -> void:
 	_rebuild()
+
+func _on_save_instance_button_pressed() -> void:
+	if FeatureModelData.root == null:
+		return
+	var selection := feature_tree.get_selection()
+	FeatureModelExporter.save_instance(selection, "user://feature_instance.xml")
+	status_label.text = "Saved to user://feature_instance.xml"

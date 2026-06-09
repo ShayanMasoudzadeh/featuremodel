@@ -10,6 +10,30 @@ static func save(root: BaseFeatureNode, constraints: Array[Constraint], path: St
 		return
 	file.store_string(_build_xml(root, constraints))
 
+static func save_instance(selection: Array[Dictionary], path: String) -> void:
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		push_error("FeatureModelExporter: cannot open '%s'" % path)
+		return
+	file.store_string(_build_instance_xml(selection))
+
+# ── Instance XML builder ──────────────────────────────────────────────────────
+
+static func _build_instance_xml(selection: Array[Dictionary]) -> String:
+	var lines: PackedStringArray = []
+	lines.append('<?xml version="1.0" encoding="UTF-8"?>')
+	lines.append("<configuration>")
+	for entry in selection:
+		var feature: BaseFeatureNode = entry["feature"]
+		var name := _escape(feature.featureName)
+		if entry["selected"]:
+			var kind := "automatic" if entry["automatic"] else "manual"
+			lines.append('  <feature %s="selected" name="%s"/>' % [kind, name])
+		else:
+			lines.append('  <feature manual="unselected" name="%s"/>' % name)
+	lines.append("</configuration>")
+	return "\n".join(lines)
+
 # ── XML builder ───────────────────────────────────────────────────────────────
 
 static func _build_xml(root: BaseFeatureNode, constraints: Array[Constraint]) -> String:
