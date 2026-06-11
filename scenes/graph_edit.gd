@@ -8,6 +8,9 @@ signal update_nodes()
 @onready var type_option_btn: OptionButton = $"../../AddConstWindow/VBoxContainer/HBoxContainer/TypeOptionBtn"
 @onready var to_option_btn: OptionButton = $"../../AddConstWindow/VBoxContainer/HBoxContainer/ToOptionBtn"
 
+@onready var validation_panel: PanelContainer = $"../../ValidationPanel"
+@onready var validation_label: RichTextLabel = $"../../ValidationPanel/MarginContainer/VBoxContainer/RichTextLabel"
+
 @onready var constraints_cont: VBoxContainer = $"../../FoldableContainer/ScrollContainer/ConstraintsCont"
 const CONSTRAINT_NODE = preload("uid://c1fw68hmhp7ts")
 
@@ -113,3 +116,17 @@ func update_const_option_btns() -> void:
 
 	from_option_btn.selected = -1
 	to_option_btn.selected = -1
+
+func _on_validate_button_pressed() -> void:
+	var errors := ModelValidator.validate($RootNode, constraints)
+	if errors.is_empty():
+		validation_label.text = "[color=green]✓ No issues found.[/color]"
+	else:
+		var lines := PackedStringArray()
+		for e in errors:
+			lines.append("[color=orange]⚠[/color] " + e)
+		validation_label.text = "\n".join(lines)
+	validation_panel.visible = true
+
+func _on_validation_close_button_pressed() -> void:
+	validation_panel.visible = false

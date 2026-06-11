@@ -88,6 +88,20 @@ corner_detail = 5
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_psqnr"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pqprv"]
+bg_color = Color(0.6, 0, 0, 0.28627452)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_td5r2"]
+bg_color = Color(0.25, 0, 0, 0.28627452)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
 [node name="Editor" type="Panel" unique_id=1345218056]
 anchors_preset = 15
 anchor_right = 1.0
@@ -117,6 +131,10 @@ text = "Add Node +"
 [node name="AddConstraintButton" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=1527485216]
 layout_mode = 2
 text = "Add Constraint +"
+
+[node name="ValidateButton" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=372196596]
+layout_mode = 2
+text = "Validate Model"
 
 [node name="SaveXmlButton" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=80336211]
 layout_mode = 2
@@ -276,10 +294,55 @@ custom_minimum_size = Vector2(100, 30)
 layout_mode = 2
 text = "Add"
 
+[node name="ValidationPanel" type="PanelContainer" parent="." unique_id=1116910112]
+visible = false
+custom_minimum_size = Vector2(500, 200)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 38.0
+offset_top = -80.0
+offset_right = 78.0
+offset_bottom = -40.0
+grow_vertical = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="ValidationPanel" unique_id=349522614]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ValidationPanel/MarginContainer" unique_id=1360516544]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="ValidationPanel/MarginContainer/VBoxContainer" unique_id=596006120]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ValidationPanel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=1174167354]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Validation Results"
+
+[node name="ValidationCloseButton" type="Button" parent="ValidationPanel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=529487930]
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_pqprv")
+theme_override_styles/hover = SubResource("StyleBoxFlat_td5r2")
+text = "X"
+
+[node name="RichTextLabel" type="RichTextLabel" parent="ValidationPanel/MarginContainer/VBoxContainer" unique_id=1379925112]
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/AddNodeButton" to="VBoxContainer/GraphEdit" method="_on_add_node_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/AddConstraintButton" to="VBoxContainer/GraphEdit" method="_on_add_constraint_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/ValidateButton" to="VBoxContainer/GraphEdit" method="_on_validate_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/SaveXmlButton" to="VBoxContainer/GraphEdit" method="_on_save_xml_button_pressed"]
 [connection signal="connection_request" from="VBoxContainer/GraphEdit" to="VBoxContainer/GraphEdit" method="_on_connection_request"]
 [connection signal="disconnection_request" from="VBoxContainer/GraphEdit" to="VBoxContainer/GraphEdit" method="_on_disconnection_request"]
 [connection signal="pressed" from="AddConstWindow/VBoxContainer/HBoxContainer2/CancelButton" to="VBoxContainer/GraphEdit" method="_on_add_const_cancel_button_pressed"]
 [connection signal="pressed" from="AddConstWindow/VBoxContainer/HBoxContainer2/AddButton" to="VBoxContainer/GraphEdit" method="_on_add_const_add_button_pressed"]
+[connection signal="pressed" from="ValidationPanel/MarginContainer/VBoxContainer/HBoxContainer/ValidationCloseButton" to="VBoxContainer/GraphEdit" method="_on_validation_close_button_pressed"]
