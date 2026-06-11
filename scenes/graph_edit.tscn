@@ -9,31 +9,6 @@ bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qdvp5"]
 bg_color = Color(0.22382358, 0.22382358, 0.22382352, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_w1f5q"]
-content_margin_bottom = 10.0
-bg_color = Color(0.17211545, 0.1721153, 0.1721153, 1)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-corner_detail = 5
-shadow_color = Color(0, 0, 0, 0.39215687)
-shadow_size = 5
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bkvrj"]
-content_margin_left = 4.0
-content_margin_top = 4.0
-content_margin_right = 4.0
-content_margin_bottom = 4.0
-bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_detail = 5
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0pfwd"]
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_psqnr"]
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_psqnr"]
 content_margin_left = 4.0
 content_margin_top = 4.0
@@ -88,6 +63,31 @@ corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
 corner_detail = 5
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_w1f5q"]
+content_margin_bottom = 10.0
+bg_color = Color(0.17211545, 0.1721153, 0.1721153, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+shadow_color = Color(0, 0, 0, 0.39215687)
+shadow_size = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bkvrj"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_detail = 5
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0pfwd"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_psqnr"]
+
 [node name="Editor" type="Panel" unique_id=1345218056]
 anchors_preset = 15
 anchor_right = 1.0
@@ -105,8 +105,10 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer" unique_id=1320361278]
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_override_constants/separation = 10
+alignment = 2
 
 [node name="AddNodeButton" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=840578435]
 layout_mode = 2
@@ -141,121 +143,16 @@ offset_bottom = 327.0
 mouse_filter = 1
 position_offset = Vector2(108, 177)
 
-[node name="AddConstWindow" type="PanelContainer" parent="VBoxContainer/GraphEdit" unique_id=1612486392]
-visible = false
-z_index = 2
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_w1f5q")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/GraphEdit/AddConstWindow" unique_id=1598292540]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="PanelContainer" type="PanelContainer" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer" unique_id=501336607]
-custom_minimum_size = Vector2(300, 30)
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_bkvrj")
-
-[node name="Label" type="Label" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/PanelContainer" unique_id=1397528411]
-layout_mode = 2
-text = " Add a constraint"
-
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer" unique_id=613090438]
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
-alignment = 1
-
-[node name="VSeparator2" type="VSeparator" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1386820517]
-custom_minimum_size = Vector2(20, 0)
-layout_mode = 2
-theme_override_styles/separator = SubResource("StyleBoxEmpty_0pfwd")
-
-[node name="Label" type="Label" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1322942761]
-layout_mode = 2
-text = "From:"
-
-[node name="FromOptionBtn" type="OptionButton" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1437919050]
-custom_minimum_size = Vector2(100, 0)
-layout_mode = 2
-item_count = 1
-popup/item_0/text = "null"
-popup/item_0/id = 0
-
-[node name="VSeparator" type="VSeparator" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=354575897]
-custom_minimum_size = Vector2(20, 0)
-layout_mode = 2
-theme_override_styles/separator = SubResource("StyleBoxEmpty_0pfwd")
-
-[node name="Label2" type="Label" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=566240413]
-layout_mode = 2
-text = "Type:"
-
-[node name="TypeOptionBtn" type="OptionButton" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=2000284071]
-custom_minimum_size = Vector2(100, 0)
-layout_mode = 2
-item_count = 2
-popup/item_0/text = "requires"
-popup/item_0/id = 0
-popup/item_1/text = "excludes"
-popup/item_1/id = 1
-
-[node name="VSeparator3" type="VSeparator" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=2079250014]
-custom_minimum_size = Vector2(20, 0)
-layout_mode = 2
-theme_override_styles/separator = SubResource("StyleBoxEmpty_psqnr")
-
-[node name="Label3" type="Label" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1922971421]
-layout_mode = 2
-text = "To:"
-
-[node name="ToOptionBtn" type="OptionButton" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1718305016]
-custom_minimum_size = Vector2(100, 0)
-layout_mode = 2
-item_count = 1
-popup/item_0/text = "null"
-popup/item_0/id = 0
-
-[node name="VSeparator4" type="VSeparator" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1767443326]
-custom_minimum_size = Vector2(20, 0)
-layout_mode = 2
-theme_override_styles/separator = SubResource("StyleBoxEmpty_0pfwd")
-
-[node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer" unique_id=1320032081]
-layout_mode = 2
-theme_override_constants/separation = 25
-alignment = 1
-
-[node name="CancelButton" type="Button" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2" unique_id=1118422553]
-custom_minimum_size = Vector2(100, 30)
-layout_mode = 2
-text = "Cancel"
-
-[node name="AddButton" type="Button" parent="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2" unique_id=1401744430]
-custom_minimum_size = Vector2(100, 30)
-layout_mode = 2
-text = "Add"
-
-[node name="FoldableContainer" type="FoldableContainer" parent="VBoxContainer/GraphEdit" unique_id=735768490]
+[node name="FoldableContainer" type="FoldableContainer" parent="." unique_id=735768490]
 z_index = 1
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -319.0
-offset_top = 10.0
+offset_top = 45.0
 offset_right = -17.0
-offset_bottom = 414.0
+offset_bottom = 449.0
 grow_horizontal = 0
 theme_override_styles/title_panel = SubResource("StyleBoxFlat_psqnr")
 theme_override_styles/title_hover_panel = SubResource("StyleBoxFlat_7w68q")
@@ -265,19 +162,124 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_q8srt")
 folded = true
 title = "Constraints"
 
-[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer/GraphEdit/FoldableContainer" unique_id=1643975150]
+[node name="ScrollContainer" type="ScrollContainer" parent="FoldableContainer" unique_id=1643975150]
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ConstraintsCont" type="VBoxContainer" parent="VBoxContainer/GraphEdit/FoldableContainer/ScrollContainer" unique_id=1569093485]
+[node name="ConstraintsCont" type="VBoxContainer" parent="FoldableContainer/ScrollContainer" unique_id=1569093485]
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="AddConstWindow" type="PanelContainer" parent="." unique_id=1612486392]
+visible = false
+z_index = 2
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -263.5
+offset_top = -54.0
+offset_right = 263.5
+offset_bottom = 89.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_w1f5q")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="AddConstWindow" unique_id=1598292540]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="PanelContainer" type="PanelContainer" parent="AddConstWindow/VBoxContainer" unique_id=501336607]
+custom_minimum_size = Vector2(300, 30)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bkvrj")
+
+[node name="Label" type="Label" parent="AddConstWindow/VBoxContainer/PanelContainer" unique_id=1397528411]
+layout_mode = 2
+text = " Add a constraint"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="AddConstWindow/VBoxContainer" unique_id=613090438]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1386820517]
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxEmpty_0pfwd")
+
+[node name="Label" type="Label" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1322942761]
+layout_mode = 2
+text = "From:"
+
+[node name="FromOptionBtn" type="OptionButton" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1437919050]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+item_count = 1
+popup/item_0/text = "null"
+popup/item_0/id = 0
+
+[node name="VSeparator" type="VSeparator" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=354575897]
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxEmpty_0pfwd")
+
+[node name="Label2" type="Label" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=566240413]
+layout_mode = 2
+text = "Type:"
+
+[node name="TypeOptionBtn" type="OptionButton" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=2000284071]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+item_count = 2
+popup/item_0/text = "requires"
+popup/item_0/id = 0
+popup/item_1/text = "excludes"
+popup/item_1/id = 1
+
+[node name="VSeparator3" type="VSeparator" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=2079250014]
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxEmpty_psqnr")
+
+[node name="Label3" type="Label" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1922971421]
+layout_mode = 2
+text = "To:"
+
+[node name="ToOptionBtn" type="OptionButton" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1718305016]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+item_count = 1
+popup/item_0/text = "null"
+popup/item_0/id = 0
+
+[node name="VSeparator4" type="VSeparator" parent="AddConstWindow/VBoxContainer/HBoxContainer" unique_id=1767443326]
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxEmpty_0pfwd")
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="AddConstWindow/VBoxContainer" unique_id=1320032081]
+layout_mode = 2
+theme_override_constants/separation = 25
+alignment = 1
+
+[node name="CancelButton" type="Button" parent="AddConstWindow/VBoxContainer/HBoxContainer2" unique_id=1118422553]
+custom_minimum_size = Vector2(100, 30)
+layout_mode = 2
+text = "Cancel"
+
+[node name="AddButton" type="Button" parent="AddConstWindow/VBoxContainer/HBoxContainer2" unique_id=1401744430]
+custom_minimum_size = Vector2(100, 30)
+layout_mode = 2
+text = "Add"
 
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/AddNodeButton" to="VBoxContainer/GraphEdit" method="_on_add_node_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/AddConstraintButton" to="VBoxContainer/GraphEdit" method="_on_add_constraint_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/SaveXmlButton" to="VBoxContainer/GraphEdit" method="_on_save_xml_button_pressed"]
 [connection signal="connection_request" from="VBoxContainer/GraphEdit" to="VBoxContainer/GraphEdit" method="_on_connection_request"]
 [connection signal="disconnection_request" from="VBoxContainer/GraphEdit" to="VBoxContainer/GraphEdit" method="_on_disconnection_request"]
-[connection signal="pressed" from="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2/CancelButton" to="VBoxContainer/GraphEdit" method="_on_add_const_cancel_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/GraphEdit/AddConstWindow/VBoxContainer/HBoxContainer2/AddButton" to="VBoxContainer/GraphEdit" method="_on_add_const_add_button_pressed"]
+[connection signal="pressed" from="AddConstWindow/VBoxContainer/HBoxContainer2/CancelButton" to="VBoxContainer/GraphEdit" method="_on_add_const_cancel_button_pressed"]
+[connection signal="pressed" from="AddConstWindow/VBoxContainer/HBoxContainer2/AddButton" to="VBoxContainer/GraphEdit" method="_on_add_const_add_button_pressed"]

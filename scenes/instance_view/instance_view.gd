@@ -1,8 +1,8 @@
 extends Control
 class_name InstanceView
 
-@onready var feature_tree: FeatureTree = $ScrollContainer/FeatureTree
-@onready var status_label: Label = $TopBar/StatusLabel
+@onready var feature_tree: FeatureTree = $VBoxContainer/ScrollContainer/FeatureTree
+@onready var status_label: Label = $VBoxContainer/TopBar/StatusLabel
 
 func _ready() -> void:
 	FeatureModelData.model_changed.connect(_on_model_changed)

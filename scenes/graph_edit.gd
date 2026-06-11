@@ -3,12 +3,12 @@ extends GraphEdit
 signal update_nodes()
 
 # Add Constraint Window nodes
-@onready var add_const_window: PanelContainer = $AddConstWindow
-@onready var from_option_btn: OptionButton = $AddConstWindow/VBoxContainer/HBoxContainer/FromOptionBtn
-@onready var type_option_btn: OptionButton = $AddConstWindow/VBoxContainer/HBoxContainer/TypeOptionBtn
-@onready var to_option_btn: OptionButton = $AddConstWindow/VBoxContainer/HBoxContainer/ToOptionBtn
+@onready var add_const_window: PanelContainer = $"../../AddConstWindow"
+@onready var from_option_btn: OptionButton = $"../../AddConstWindow/VBoxContainer/HBoxContainer/FromOptionBtn"
+@onready var type_option_btn: OptionButton = $"../../AddConstWindow/VBoxContainer/HBoxContainer/TypeOptionBtn"
+@onready var to_option_btn: OptionButton = $"../../AddConstWindow/VBoxContainer/HBoxContainer/ToOptionBtn"
 
-@onready var constraints_cont: VBoxContainer = $FoldableContainer/ScrollContainer/ConstraintsCont
+@onready var constraints_cont: VBoxContainer = $"../../FoldableContainer/ScrollContainer/ConstraintsCont"
 const CONSTRAINT_NODE = preload("uid://c1fw68hmhp7ts")
 
 var nodes: Array[BaseFeatureNode] = []
@@ -100,7 +100,7 @@ func _on_add_const_add_button_pressed() -> void:
 		type_option_btn.get_item_text(type_option_btn.selected)
 	)
 
-	$FoldableContainer.folded = false
+	$"../../FoldableContainer".folded = false
 	add_const_window.visible = false
 
 func update_const_option_btns() -> void:

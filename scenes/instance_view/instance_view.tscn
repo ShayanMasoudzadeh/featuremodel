@@ -4,6 +4,9 @@
 [ext_resource type="PackedScene" uid="uid://c3g13pxo65h51" path="res://scenes/instance_view/feature_tree.tscn" id="2_uag73"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uag73"]
+bg_color = Color(0.078431375, 0.078431375, 0.078431375, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cvhwj"]
 bg_color = Color(0.1882353, 0.1882353, 0.1882353, 1)
 
 [node name="InstanceView" type="Control" unique_id=783553036]
@@ -25,40 +28,38 @@ grow_vertical = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_uag73")
 
-[node name="TopBar" type="HBoxContainer" parent="." unique_id=7821084]
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1084878801]
 layout_mode = 1
-anchors_preset = -1
+anchors_preset = 15
 anchor_right = 1.0
-offset_left = 10.0
-offset_top = 9.0
-offset_right = -10.0
-offset_bottom = 45.0
+anchor_bottom = 1.0
 grow_horizontal = 2
+grow_vertical = 2
 
-[node name="StatusLabel" type="Label" parent="TopBar" unique_id=1005762360]
+[node name="TopBar" type="HBoxContainer" parent="VBoxContainer" unique_id=7821084]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="StatusLabel" type="Label" parent="VBoxContainer/TopBar" unique_id=1005762360]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="ResetButton" type="Button" parent="TopBar" unique_id=854927845]
+[node name="ResetButton" type="Button" parent="VBoxContainer/TopBar" unique_id=854927845]
 layout_mode = 2
-text = "Reset"
+text = "Reset selections"
 
-[node name="SaveButton" type="Button" parent="TopBar" unique_id=1162032197]
+[node name="SaveButton" type="Button" parent="VBoxContainer/TopBar" unique_id=1162032197]
 layout_mode = 2
-text = "Save .xml"
+text = "Save to .xml"
 
-[node name="ScrollContainer" type="ScrollContainer" parent="." unique_id=1954590089]
-layout_mode = 1
-anchors_preset = -1
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_top = -594.0
-grow_horizontal = 2
-grow_vertical = 0
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer" unique_id=1954590089]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_cvhwj")
 
-[node name="FeatureTree" parent="ScrollContainer" unique_id=1373812468 instance=ExtResource("2_uag73")]
+[node name="FeatureTree" parent="VBoxContainer/ScrollContainer" unique_id=1373812468 instance=ExtResource("2_uag73")]
 layout_mode = 2
 
-[connection signal="pressed" from="TopBar/ResetButton" to="." method="_on_reset_button_pressed"]
-[connection signal="pressed" from="TopBar/SaveButton" to="." method="_on_save_instance_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/TopBar/ResetButton" to="." method="_on_reset_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/TopBar/SaveButton" to="." method="_on_save_instance_button_pressed"]
