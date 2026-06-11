@@ -228,6 +228,18 @@ func _propagate_constraints() -> void:
 				if not to_item.locked_by_mandatory:
 					to_item.is_locked = true
 					to_item.is_selected = true
+					_select_ancestors(c.to_node)
+					# If the target is inside an ALT group, deselect and disable its siblings
+					var to_parent := _get_parent_of(c.to_node)
+					if to_parent != null and to_parent.isChildrenXor:
+						for sibling in to_parent.children:
+							if sibling == c.to_node:
+								continue
+							var sib_item: FeatureItem = _item_map.get(sibling)
+							if sib_item and not sib_item.locked_by_mandatory:
+								sib_item.is_selected = false
+								sib_item.is_disabled = true
+								_deselect_subtree(sibling)
 			"excludes":
 				if not to_item.locked_by_mandatory:
 					to_item.is_disabled = true
